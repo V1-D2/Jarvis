@@ -1,4 +1,5 @@
 import os
+import asyncio
 import time
 import speech_recognition as sr
 from fuzzywuzzy import fuzz
@@ -76,7 +77,7 @@ def listenTheAnswer():
     r = sr.Recognizer()
     mic = sr.Microphone(device_index=1)
     with mic as audio_file:
-        print("Speak Please")
+        speak("Speak Please")
 
         r.adjust_for_ambient_noise(audio_file)
         audio = r.listen(audio_file)
@@ -99,9 +100,10 @@ def callbackForCommands(recognizer, audio):
     try:
         voice = recognizer.recognize_google(audio, language="ru-RU").lower()
         print("[log] Распознано: " + voice)
-        condition()
+        #say hi
+        #condition()
         if voice.startswith(opts["alias"]):
-            # обращаются к Кеше
+
             cmd = voice
 
             for x in opts['alias']:
@@ -110,7 +112,7 @@ def callbackForCommands(recognizer, audio):
             for x in opts['tbr']:
                 cmd = cmd.replace(x, "").strip()
 
-            # распознаем и выполняем команду
+            # recognize command
             cmd = recognize_cmd(cmd)
 
             execute_cmd(cmd)
@@ -138,7 +140,7 @@ def execute_cmd(cmd):
     if (cmd["cmd"] in cmdWithAdditionalInformation):
         eval(cmd['cmd']+f'(cleanTheRequest(cmd["startCmd"], cmd["cmd"]))')
     else:
-        print(cmd["cmd"])
+        #print(cmd["cmd"])
         eval(cmd['cmd'] + "()")
 
 
@@ -168,13 +170,10 @@ def grettMe():
     hour = int(time.strftime("%H", time.localtime()))
     if hour>=3 and hour<12:
         speak("Здравствуйте, как вам утро?")
-        #print("Hello,Good Morning")
     elif hour>=12 and hour<17:
         speak("Добрый день, сэр")
-        #print("Hello,Good Afternoon")
     else:
         speak("Чудный сегодня вечер не так ли?")
-        #print("Hello,Good Evening")
 
 '''
 End
@@ -182,31 +181,10 @@ End
 
 
 
+'''
+Related To Weather
+'''
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Functions which need the request
-
-
-#Related to weather
 def whatTheWeather():
     speak(weather())
 
@@ -221,9 +199,9 @@ def weatherInPlace(place):
 
 
 '''
-For Telegram Functions
+For Telegram Functions/Telegram Functions
 '''
-fin = open("name_username.txt", "r")
+fin = open("name_username.txt", "r", encoding="UTF8")
 baseNameUsername = {}
 baseUsernameName = {}
 for line in fin:
@@ -232,19 +210,6 @@ for line in fin:
     baseUsernameName[ar[1]] = ar[0]
 
 
-# create my client
-config = configparser.ConfigParser()
-config.read("config.ini")
-
-api_id = config['Telegram']['api_id']
-api_hash = config['Telegram']['api_hash']
-username = config['Telegram']['username']
-
-client = TelegramClient(username, api_id, api_hash)
-
-
-
-#Related to Telegram
 def missedMessages():
     global baseUsernameName
     fin = open("Missed_Massages.txt", "r")
@@ -253,15 +218,30 @@ def missedMessages():
         array = [ i for i in line.split(", ").strip()]
     name = baseUsernameName[array[1]]
     for i in range(len(array)):
-        youMissed = youMissed + array[0]+" это вам написал "+array[1]+" в "+array[2] + " также "
+        youMissed = youMissed + array[0]+" это вам написал "+name+" в "+array[2] + " также "
+    fin.close()
+    #To clean the file
+    fin = open("Missed_Massages.txt","w")
+    fin.close()
+    #
     speak(youMissed+"это всё.")
 
 def humor():
     speak(startTheHumorFunctions())
 
 def writeTo(name):
-    global client
     global baseNameUsername
+    # create my client
+    config = configparser.ConfigParser()
+    config.read("config.ini")
+
+    api_id = config['Telegram']['api_id']
+    api_hash = config['Telegram']['api_hash']
+    username = config['Telegram']['username']
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    client = TelegramClient(username, api_id, api_hash)
     username = baseNameUsername[name]
 
     with client:
@@ -274,7 +254,7 @@ async def writeMessage(client, username):
     while True:
         speak("Что вы хотите написать?")
         whatToWrite = listenTheAnswer()
-        await client.send_message(username, listenTheAnswer())
+        await client.send_message(username, whatToWrite)
         speak("Ещё чтонебудь напишем?")
         answer = listenTheAnswer()
         if("нехочу" in answer or "не " in answer):
@@ -293,7 +273,8 @@ End
 
 
 
-#Related to Internet
+'''Related To the Internet services'''
+
 whatToWatch = { "cleanTheRequest":("давай","открой","можешь","открыть","я хочу","посмотреть")}
 def openYouTube():
     speak("Что вы хотите посмотреть?")
@@ -311,9 +292,8 @@ def openYouTube():
 
 #Search the wikipedia
 def wiki(request):
-    #speak('Searching Wikipedia...')
+    speak('Минутку')
     request = translateTo(request, 'en')
-    print(request)
     results = wikipedia.summary(request, sentences=1)
     #speak("According to Wikipedia")
     results = translateTo(results, 'ru')
@@ -327,27 +307,22 @@ def translation(request):
         request = request.replace("на англ ", "").replace("на английский ", "")
         translat = translateTo(request, "en")
         speak(translat)
-        print(translat)
     elif("испанский" in request):
         request = request.replace("на испанский ", "")
         translat = translateTo(request, "es")
         speak(translat)
-        print(translat)
     elif ("французкий" in request):
         request = request.replace("на французский ", "")
         translat = translateTo(request, "fr")
         speak(translat)
-        print(translat)
     elif("немецкий" in request):
         request = request.replace("на немецкий ", "")
         translat = translateTo(request, "de")
         speak(translat)
-        print(translat)
     elif("португальский" in request):
         request = request.replace("на португальский ", "")
         translat = translateTo(request, "pt")
         speak(translat)
-        print(translat)
 
 def translateTo(request, lg):
     translator = google_translator()
@@ -383,7 +358,7 @@ def searchInBrowser(request):
 
 
 
-# current time
+'Current Time'
 def ctime():
     now = datetime.datetime.now()
     speak("Сейчас " + str(now.hour) + ":" + str(now.minute))
@@ -396,7 +371,7 @@ def ctime():
 
 
 
-#Related to pills
+'''Related To Pills'''
 def remindPills():
     speak(remind())
 
@@ -429,6 +404,8 @@ def deleteSomePells(name):
 
 def iAmGoingToEat():
     speak(iAmEating())
+    
+'''End'''
 
 
 
@@ -463,7 +440,7 @@ def iAmGoingToEat():
 
 
 
-# запуск
+'''Let`s start the program '''
 
 lastCall = time.clock()
 
