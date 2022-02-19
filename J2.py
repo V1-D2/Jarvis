@@ -53,7 +53,7 @@ opts = {
         "cleanTheMarketList":("очисти список покупок", "я всё купил", "очисти покупки")
     }
 }
-cmdWithAdditionalInformation = ["whatToBuy", "writeDown", "openProgram","wiki", "searchInBrowser", "weatherIn", "iChangedThePlace", "translation", "writeTo", "deleteSomePells"]
+cmdWithAdditionalInformation = ["whatToBuy", "writeDown", "openProgram","wiki", "searchInBrowser", "weatherInPlace", "iChangedThePlace", "translation", "writeTo", "deleteSomePells"]
 placeWhereIAm = "Киев"
 
 
@@ -171,14 +171,14 @@ def cleanTheRequest(request, cmd):
 def condition():
     global lastCall
     timePassed = time.clock() - lastCall
-    if(timePassed > 3600):
+    if(timePassed > 1):
         hourNow = int(time.strftime("%H", time.localtime()))
         grettMe()
 
 def shouldIncludeName():
     global lastCall
     timePassed = time.clock() - lastCall
-    if (timePassed > 3600):
+    if (timePassed > 1):
         return True
     else:
         return False
@@ -423,7 +423,7 @@ def openProgram(request):
                         speak("Простите но всё сложнее чем мы думали, наведите курсор на приложение и два раза быстро нажмите левую кнопку мыши")
         lenOfRequest-=1
 
-        
+
 """Write down the ideas"""
 def writeDown(request):
     fin = open("CreatedIdeas.txt", "a")
@@ -533,7 +533,6 @@ def iAmGoingToEat():
 '''Let`s start the program '''
 
 lastCall = time.clock()
-
 
 
 with m as source:
