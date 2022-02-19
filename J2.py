@@ -16,11 +16,11 @@ from Weather import weatherIn
 from Weather import weather
 import Humor
 from Humor import startTheHumorFunctions
-#some functions for telegram
 import configparser
 from telethon.sync import TelegramClient
 from telethon import connection
 from telethon.tl.functions.messages import GetHistoryRequest
+import pyautogui as pg
 
 
 # options
@@ -44,17 +44,21 @@ opts = {
         "iAmGoingToEat":("я иду кушать","буду кушать","я буду обедать", "я иду завтракать", "я буду завтракать", "я иду обедать", "я иду ужинать", "я пошёл кушать"),
         "missedMassages":("что я пропустил","есть новые сообщения","мне кто то писал","есть что то новое"),
         "writeTo":("я хочу написать","давай напишем","будем писать","сейчас настрочим"),
-        "searchInBrowser":("загугли","посмотри в гугле")
+        "searchInBrowser":("загугли","посмотри в гугле"),
+        "openProgram":("открой ", "открой на компьютере"),
+        "writeDown":("запиши", "у меня есть важная идея", "давай запишем идею"),
+        "readTheIdeas":("прочитай список идей", "прочитай идеи", "напомни мне мои идеи"),
+        "whatToBuy":("запиши что мне нужно купить", "мне нужно купить", "нужно купить"),
+        "neededProducts":("скажи что мне нужно купить", "прочитай список продуктов", "прочитай список новых продуктов"),
+        "cleanTheMarketList":("очисти список покупок", "я всё купил", "очисти покупки")
     }
 }
-cmdWithAdditionalInformation = ["wiki", "searchInBrowser", "weatherIn", "iChangedThePlace", "translation", "writeTo", "deleteSomePells"]
+cmdWithAdditionalInformation = ["whatToBuy", "writeDown", "openProgram","wiki", "searchInBrowser", "weatherIn", "iChangedThePlace", "translation", "writeTo", "deleteSomePells"]
 placeWhereIAm = "Киев"
 
 
 
-'''
-Things related to listening or speaking
-'''
+''' Things related to listening or speaking '''
 r = sr.Recognizer()
 m = sr.Microphone(device_index=1)
 
@@ -69,9 +73,6 @@ def speak(what):
     speak_engine.runAndWait()
     lastCall = time.clock()
 
-
-#
-
 # recognize the answer for additional questions
 def listenTheAnswer():
     r = sr.Recognizer()
@@ -83,45 +84,54 @@ def listenTheAnswer():
         audio = r.listen(audio_file)
 
         return r.recognize_google(audio, language="ru-RU").lower()
-'''
-End
-'''
+
+''' End '''
 
 
 
 
 
-'''
-Functions related to recognition
-'''
+''' Functions related to recognition '''
 
 # recognize the command and activate the command
 def callbackForCommands(recognizer, audio):
     try:
         voice = recognizer.recognize_google(audio, language="ru-RU").lower()
         print("[log] Распознано: " + voice)
-        #say hi
-        #condition()
-        if voice.startswith(opts["alias"]):
 
-            cmd = voice
-
-            for x in opts['alias']:
-                cmd = cmd.replace(x, "").strip()
-
-            for x in opts['tbr']:
-                cmd = cmd.replace(x, "").strip()
-
-            # recognize command
-            cmd = recognize_cmd(cmd)
-
-            execute_cmd(cmd)
+        cmd = voice
+        if(shouldIncludeName()):
+            if voice.startswith(opts["alias"]):
+                # say hi
+                condition()
+                cleanRecognizeExecute(cmd)
+        else:
+            # say hi
+            condition()
+            cleanRecognizeExecute(cmd)
 
     except sr.UnknownValueError:
         print("[log] Голос не распознан!")
     except sr.RequestError as e:
         print("[log] Неизвестная ошибка, проверьте интернет!")
 
+def cleanRecognizeExecute(cmd):
+    # clean command
+    cmd = cleanCMD(cmd)
+    # recognize command
+    cmd = recognize_cmd(cmd)
+    # execute command
+    execute_cmd(cmd)
+
+
+def cleanCMD(cmd):
+    for x in opts['alias']:
+        cmd = cmd.replace(x, "").strip()
+
+    for x in opts['tbr']:
+        cmd = cmd.replace(x, "").strip()
+
+    return cmd
 
 def recognize_cmd(cmd):
     RC = {'cmd': '', 'percent': 0, 'startCmd':cmd}
@@ -152,9 +162,8 @@ def cleanTheRequest(request, cmd):
             request = request.replace(prhase, "").strip()
             return request
     return request[len(opts["cmds"][f'{cmd}'][0]):]
-''' 
-End of recognition
-'''
+
+''' End of recognition '''
 
 
 
@@ -162,9 +171,17 @@ End of recognition
 def condition():
     global lastCall
     timePassed = time.clock() - lastCall
-    if(timePassed > 10):
+    if(timePassed > 3600):
         hourNow = int(time.strftime("%H", time.localtime()))
         grettMe()
+
+def shouldIncludeName():
+    global lastCall
+    timePassed = time.clock() - lastCall
+    if (timePassed > 3600):
+        return True
+    else:
+        return False
 
 def grettMe():
     hour = int(time.strftime("%H", time.localtime()))
@@ -175,16 +192,11 @@ def grettMe():
     else:
         speak("Чудный сегодня вечер не так ли?")
 
-'''
-End
-'''
+'''End'''
 
 
 
-'''
-Related To Weather
-'''
-
+''' Related To Weather '''
 def whatTheWeather():
     speak(weather())
 
@@ -194,13 +206,12 @@ def iChangedThePlace(newPlace):
 def weatherInPlace(place):
     nameOfThePlace = translateTo(place, 'en')
     speak(weatherIn(nameOfThePlace))
+"""End"""
 
 
 
 
-'''
-For Telegram Functions/Telegram Functions
-'''
+''' Telegram Functions '''
 fin = open("name_username.txt", "r", encoding="UTF8")
 baseNameUsername = {}
 baseUsernameName = {}
@@ -242,7 +253,15 @@ def writeTo(name):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     client = TelegramClient(username, api_id, api_hash)
-    username = baseNameUsername[name]
+    if(name in baseNameUsername.keys()):
+        username = baseNameUsername[name]
+    else:
+        while True:
+            speak("Такого имени не найдено, повторите пожалуйста")
+            name = listenTheAnswer()
+            if(name in baseNameUsername):
+                speak("Имя найдено, спасибо за терпение)")
+                break
 
     with client:
         client.loop.run_until_complete(writeMessage(client, username))
@@ -260,9 +279,8 @@ async def writeMessage(client, username):
         if("нехочу" in answer or "не " in answer):
             speak("Хорошо")
             break
-'''
-End
-'''
+
+''' End '''
 
 
 
@@ -294,12 +312,13 @@ def openYouTube():
 def wiki(request):
     speak('Минутку')
     request = translateTo(request, 'en')
-    results = wikipedia.summary(request, sentences=1)
-    #speak("According to Wikipedia")
-    results = translateTo(results, 'ru')
-    #print(results)
-    results = str(results)
-    speak(results)
+    try:
+        results = wikipedia.summary(request, sentences=1)
+        results = translateTo(results, 'ru')
+        results = str(results)
+        speak(results)
+    except:
+        speak("Запроса небыло найдено.")
 
 #Translate to
 def translation(request):
@@ -335,6 +354,7 @@ def openGoogle():
     browser.get("https://www.google.com")
     time.sleep(5)
 
+#Deliver something
 def deliver():
     speak("Что вы хотите заказать? Давайте по одному.")
     dish = listenTheAnswer()
@@ -356,15 +376,85 @@ def searchInBrowser(request):
     first_pole = browser.find_element_by_css_selector('input[jsaction = "paste:puy29d;"]')
     first_pole.send_keys(f"{request}")
 
+"""End"""
 
 
+
+
+
+"""Without Theme"""
 'Current Time'
 def ctime():
     now = datetime.datetime.now()
     speak("Сейчас " + str(now.hour) + ":" + str(now.minute))
 
+'Open Program'
+listOfPositions = {"второе":2,"третье":3,"четвёртое":4,"пятое":5,"шестое":6,"седьмое":7,"восьмое":8}
+def openProgram(request):
+    request = translateTo(request, "en")
+    pg.click(354, 1056)
+    pg.PAUSE=5
+    lenOfRequest = len(request)
+    while lenOfRequest>3:
+        pg.typewrite(f"{request[:lenOfRequest]}")
+        pg.PAUSE=5
+        speak("Вы увидели нужную программу?")
+        answer = listenTheAnswer()
+        if("да" in answer):
+            speak("Приложени первое в списке?")
+            answer = listenTheAnswer()
+            if("да" in answer):
+                pg.typewrite(['Enter'])
+                pg.PAUSE=5
+            else:
+                speak("Если не знаете или не можете его правильно открыть скажите да")
+                answer = listenTheAnswer()
+                if("да" in answer):
+                    speak("Какое оно в списке позиций?")
+                    answer = listenTheAnswer()
+                    try:
+                        position = listOfPositions[answer]
+                        for i in range(1, position):
+                            pg.typewrite(["down"])
+                            pg.PAUSE=5
+                        pg.typewrite(["Enter"])
+                        break
+                    except:
+                        speak("Простите но всё сложнее чем мы думали, наведите курсор на приложение и два раза быстро нажмите левую кнопку мыши")
+        lenOfRequest-=1
 
+        
+"""Write down the ideas"""
+def writeDown(request):
+    fin = open("CreatedIdeas.txt", "a")
+    fin.write(request + '\n')
+    fin.close()
+def readTheIdeas():
+    fin.open("CreatedIdeas.txt", "r")
+    speak("Вы просили записать")
+    for line in fin:
+        idea = line.strip()
+        speak(idea)
+        speak("Также")
+    speak("Это всё.")
+    fin.close()
 
+"""What to buy in the market"""
+def whatToBuy(request):
+    fin = open("MarketList.txt", "a")
+    fin.write(request+'\n')
+    fin.close()
+def neededProducts():
+    fin = open("MarketList.txt","r")
+    speak("Вам нужно купить")
+    for line in fin:
+        speak(line.strip('\n'))
+    speak("Это всё")
+def cleanTheMarketList():
+    fin = open("MarketList.txt", "w")
+    fin.close()
+
+"""End"""
 
 
 
