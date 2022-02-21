@@ -21,6 +21,11 @@ from telethon.sync import TelegramClient
 from telethon import connection
 from telethon.tl.functions.messages import GetHistoryRequest
 import pyautogui as pg
+import Clouses
+from Clouses import goToStreet
+from Clouses import goToSport
+from Clouses import nowIsNotAvailable
+from Clouses import nowIsAvailable
 
 
 # options
@@ -50,10 +55,14 @@ opts = {
         "readTheIdeas":("прочитай список идей", "прочитай идеи", "напомни мне мои идеи"),
         "whatToBuy":("запиши что мне нужно купить", "мне нужно купить", "нужно купить"),
         "neededProducts":("скажи что мне нужно купить", "прочитай список продуктов", "прочитай список новых продуктов"),
-        "cleanTheMarketList":("очисти список покупок", "я всё купил", "очисти покупки")
+        "cleanTheMarketList":("очисти список покупок", "я всё купил", "очисти покупки"),
+        "forStreet":("что мне одеть на улицу", "подбери что мне одеть", "что мне одеть"),
+        "forSport":("я иду тренироваться", "я иду играть", "подбери в чем мне играть", "в чём мне играть", "я иду в зал, что мне", "я иду заниматься"),
+        "nowIsAvailable":("опять чистая", "вернулась", "вернулись", "вернулся", "опять чистые", "опять чистый"),
+        "nowIsNotAvailable":("теперь в стирке", "пока не доступны", "пока не доступна", "пока не доступный", "теперь в стирки")
     }
 }
-cmdWithAdditionalInformation = ["whatToBuy", "writeDown", "openProgram","wiki", "searchInBrowser", "weatherInPlace", "iChangedThePlace", "translation", "writeTo", "deleteSomePells"]
+cmdWithAdditionalInformation = ["nowIsAvailable", "nowIsNotAvailable", "forSport", "whatToBuy", "writeDown", "openProgram","wiki", "searchInBrowser", "weatherInPlace", "iChangedThePlace", "translation", "writeTo", "deleteSomePells"]
 placeWhereIAm = "Киев"
 
 
@@ -171,14 +180,14 @@ def cleanTheRequest(request, cmd):
 def condition():
     global lastCall
     timePassed = time.clock() - lastCall
-    if(timePassed > 1):
+    if(timePassed > 3600):
         hourNow = int(time.strftime("%H", time.localtime()))
         grettMe()
 
 def shouldIncludeName():
     global lastCall
     timePassed = time.clock() - lastCall
-    if (timePassed > 1):
+    if (timePassed > 3600):
         return True
     else:
         return False
@@ -497,6 +506,57 @@ def iAmGoingToEat():
     
 '''End'''
 
+
+
+
+"""Pick up clothes"""
+
+def forStreet():
+    global placeWhereIAm
+    weather = weatherPl(placeWhereIAm)
+    suteableClothes = goToStreet(weather)
+
+    whatToDress = "Я предлагаю вам одеть "
+    for i in suteableClothes.keys():
+        if(len(suteableClothes[i])>1):
+            whatToDress += suteableClothes[i][0]+" или "+suteableClothes[i][1] + " Также "
+        else:
+            whatToDress += suteableClothes[i][0] + " и "
+    whatToDress += "Как вам такой вариант?"
+    speak(whatToDress)
+
+def forSport(where):
+    global placeWhereIAm
+    if("на улице" in where and "на улицу" in where):
+        weatherNow = weatherPl(placeWhereIAm)
+        suteableClothes = goToSport(weatherNow, "opened")
+
+    else:
+        weatherNow = weatherPl(placeWhereIAm)
+        suteableClothes = goToSport(weatherNow, "closed")
+
+    whatToDress = "Я предлагаю вам одеть "
+    for i in suteableClothes.keys():
+        if (len(suteableClothes[i]) > 1):
+            whatToDress += suteableClothes[i][0] + " или " + suteableClothes[i][1] + " Также "
+        else:
+            whatToDress += suteableClothes[i][0] + " и "
+    whatToDress += "Как вам такой вариант?"
+    speak(whatToDress)
+
+def clotheNotAviable(clothe):
+    try:
+        nowIsNotAvailable(clothe)
+        speak("Сделанно")
+    except:
+        speak("Этой вещи нет в списке")
+
+def clotheAvailable(clothe):
+    try:
+        nowIsAvailable(clothe)
+        speak("Выполненно")
+    except:
+        speak("Этой вещи нет в списке")
 
 
 
