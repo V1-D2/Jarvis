@@ -178,7 +178,7 @@ def cleanTheRequest(request, cmd):
 
 ''' Should J say hi? '''
 def condition():
-    global lastCall
+    global lastCallx
     timePassed = time.clock() - lastCall
     if(timePassed > 3600):
         hourNow = int(time.strftime("%H", time.localtime()))
@@ -594,6 +594,7 @@ def clotheAvailable(clothe):
 
 lastCall = time.clock()
 
+os.system(r"J2_Telegram_Modulo.py") # To start Telegram Modulo
 
 with m as source:
     r.adjust_for_ambient_noise(source)
